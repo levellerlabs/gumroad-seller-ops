@@ -1,0 +1,350 @@
+{
+  "id": "levellerco/gumroad-seller-ops",
+  "name": "gumroad-seller-ops",
+  "version": "1.0.2",
+  "manifest_version": 1,
+  "publisher_pubkey": "b8d07b5fa00f5e23089da5ac9e612cee94373fd0b7536f7af22d03b2a46279dd",
+  "provider": "gumroad",
+  "description": "Governed Gumroad seller operations. Ten commands covering the day-to-day seller loop: product catalogue reads, sales/revenue reporting, license verification, subscriber and audience-email pulls, offer-code create/list/delete, and price updates - all through the preview -> approve -> execute airlock. Auth = one Gumroad API token (Bearer). Built for digital-product sellers who want sales checks and discount management inside governed workflows instead of raw API calls.",
+  "credential_spec": {
+    "provider": "gumroad",
+    "category": "Revenue",
+    "name": "Gumroad (API token)",
+    "required": [
+      "access_token"
+    ],
+    "optional": [],
+    "shape": "dict",
+    "risk": "medium",
+    "read_write": "write"
+  },
+  "allowed_destinations": [
+    {
+      "provider": "gumroad",
+      "hosts": [
+        "api.gumroad.com"
+      ]
+    }
+  ],
+  "requires": {
+    "network": [
+      "api.gumroad.com"
+    ],
+    "subprocess": false
+  },
+  "category": "Revenue",
+  "commands": [
+    {
+      "id": "gumroad.list_products",
+      "title": "List Gumroad products",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "page": {
+          "type": "number",
+          "required": false
+        },
+        "per_page": {
+          "type": "number",
+          "required": false
+        }
+      },
+      "output_schema": {
+        "count": "number",
+        "products": "array"
+      }
+    },
+    {
+      "id": "gumroad.get_product",
+      "title": "Get one Gumroad product",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output_schema": {
+        "product_id": "string",
+        "name": "string",
+        "price_cents": "number",
+        "published": "boolean",
+        "sales_count": "number"
+      }
+    },
+    {
+      "id": "gumroad.sales_summary",
+      "title": "Sales and revenue summary",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "after": {
+          "type": "string",
+          "required": false
+        },
+        "before": {
+          "type": "string",
+          "required": false
+        },
+        "product_id": {
+          "type": "string",
+          "required": false
+        }
+      },
+      "output_schema": {
+        "sales_count": "number",
+        "gross_cents": "number",
+        "net_cents": "number",
+        "currency": "string"
+      }
+    },
+    {
+      "id": "gumroad.list_sales",
+      "title": "List recent sales (detail rows)",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "after": {
+          "type": "string",
+          "required": false
+        },
+        "before": {
+          "type": "string",
+          "required": false
+        },
+        "product_id": {
+          "type": "string",
+          "required": false
+        },
+        "limit": {
+          "type": "number",
+          "required": false
+        }
+      },
+      "output_schema": {
+        "sales_count": "number",
+        "sales": "array"
+      }
+    },
+    {
+      "id": "gumroad.verify_license",
+      "title": "Verify a license key for a product",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        },
+        "license_key": {
+          "type": "string",
+          "required": true
+        },
+        "increment_uses_count": {
+          "type": "boolean",
+          "required": false
+        }
+      },
+      "output_schema": {
+        "valid": "boolean",
+        "uses": "number",
+        "purchase_email": "string"
+      }
+    },
+    {
+      "id": "gumroad.list_subscribers",
+      "title": "List subscribers of a product",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output_schema": {
+        "subscribers_count": "number",
+        "subscribers": "array"
+      }
+    },
+    {
+      "id": "gumroad.list_emails",
+      "title": "List audience emails",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {},
+      "output_schema": {
+        "emails_count": "number",
+        "emails": "array"
+      }
+    },
+    {
+      "id": "gumroad.create_offer_code",
+      "title": "Create an offer code (fixed or percent)",
+      "provider": "gumroad",
+      "risk": "medium",
+      "mode": "write_requires_approval",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "external",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        },
+        "name": {
+          "type": "string",
+          "required": true
+        },
+        "amount_off": {
+          "type": "number",
+          "required": true
+        },
+        "offer_type": {
+          "type": "string",
+          "required": false
+        },
+        "max_purchase_count": {
+          "type": "number",
+          "required": false
+        }
+      },
+      "output_schema": {
+        "offer_code_id": "string",
+        "name": "string",
+        "http_status": "number"
+      }
+    },
+    {
+      "id": "gumroad.list_offer_codes",
+      "title": "List offer codes for a product",
+      "provider": "gumroad",
+      "risk": "low",
+      "mode": "read",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "none",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output_schema": {
+        "offer_codes_count": "number",
+        "offer_codes": "array"
+      }
+    },
+    {
+      "id": "gumroad.delete_offer_code",
+      "title": "Delete an offer code",
+      "provider": "gumroad",
+      "risk": "medium",
+      "mode": "write_requires_approval",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "external",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        },
+        "offer_code_id": {
+          "type": "string",
+          "required": true
+        }
+      },
+      "output_schema": {
+        "deleted": "boolean",
+        "http_status": "number"
+      }
+    },
+    {
+      "id": "gumroad.update_price",
+      "title": "Update a product price (pence/cents)",
+      "provider": "gumroad",
+      "risk": "high",
+      "mode": "write_requires_approval",
+      "requires": [
+        "gumroad"
+      ],
+      "preview": true,
+      "receipt_required": true,
+      "side_effects": "external",
+      "input_schema": {
+        "product_id": {
+          "type": "string",
+          "required": true
+        },
+        "price_cents": {
+          "type": "number",
+          "required": true
+        }
+      },
+      "output_schema": {
+        "product_id": "string",
+        "price_cents": "number",
+        "http_status": "number"
+      }
+    }
+  ]
+}
