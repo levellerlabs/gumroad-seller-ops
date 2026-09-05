@@ -1,0 +1,36 @@
+contest:round2 — Governed Gumroad seller operations: catalogue reads, refund-aware revenue reporting, license verification, subscriber and audience pulls, offer-code management, and price updates, all through the preview -> approve -> execute airlock.
+
+WHO IT'S FOR: digital-product sellers (ebooks, courses, printables, software) who check Gumroad daily and want those checks inside an auditable, receipted workflow instead of raw API calls or dashboard logins — solo creators, small shops running discount launches with an approval step, VAs granted preview rights on price changes.
+
+THE 11 COMMANDS:
+- gumroad.list_products — catalogue with price, sales count, publish state
+- gumroad.get_product — one product's live state
+- gumroad.sales_summary — refund/chargeback-aware gross+net totals for a date range
+- gumroad.list_sales — detail rows: product, buyer email, price, refund flags
+- gumroad.verify_license — 404 mapped to a clean valid:false answer, not an error
+- gumroad.list_subscribers — subscribers incl. cancellation state
+- gumroad.list_emails — audience list with purchase linkage
+- gumroad.create_offer_code — percent or fixed discount, optional usage cap
+- gumroad.list_offer_codes — active codes with times_used
+- gumroad.delete_offer_code — retire a code
+- gumroad.update_price — integer pence/cents price change
+
+Every write command is mode=write_requires_approval with side_effects=external: the airlock forces human approval before execution and seals a signed receipt after. Reads are mode=read, side_effects=none. Risk is declared per command (low/medium/high).
+
+WORKED EXAMPLE — morning revenue check:
+  gumroad.sales_summary after=2026-08-01
+  -> preview: 7 sales, gross 20300p, net 19015p, GBP [approve?]
+  -> approve -> signed receipt on record
+
+WORKED EXAMPLE — launch a capped 20% weekend code:
+  gumroad.create_offer_code product_id=2Fo8… name=AUG20 amount_off=20 offer_type=percent max_purchase_count=50
+  -> preview shows exactly what will be POSTed [approve?]
+  -> approve -> offer_code_id returned in a signed receipt
+
+SECURITY POSTURE: auth is a single Gumroad API token (Bearer) read from the RailCall vault at execution time — never from environment variables, never logged, never included in receipts or error text. Network is pinned to api.gumroad.com in the manifest; every request goes through the module network gate. Inputs are validated before any call (ranges, types, offer_type allowlist); errors raise with clear messages instead of being swallowed. No subprocess, no filesystem writes.
+
+INSTALL (under 2 minutes): railcall market install levellerco/gumroad-seller-ops, then save one vault entry (railcall vault set gumroad '{"access_token":"<token>"}'). Full README with all worked examples: https://github.com/levellerlabs/gumroad-seller-ops
+
+VERIFIED: all 11 commands were executed live against the real Gumroad v2 API through the full preview -> approve -> execute loop during development — reads returned real catalogue and sales data; writes (offer-code create/delete, price set to the same value) were proven and immediately reverted; every run sealed a valid Ed25519 receipt. Shapes verified against the live API 2026-08-25.
+
+KNOWN LIMITATIONS: /sales returns one page per call (pass date windows for large shops); price uses integer minor units (2900 = £29.00); not affiliated with or endorsed by Gumroad.

@@ -4,13 +4,13 @@ A [RailCall](https://railcall.ai) marketplace module that puts your entire Gumro
 
 Every command runs through RailCall's airlock: preview, approve, execute, signed receipt. Nothing touches your Gumroad account until you approve it, and every run leaves tamper-evident proof.
 
-Contest entry: `contest:2026Q3` — [marketplace listing](https://railcall.ai/marketplace/levellerco/gumroad-seller-ops).
+Contest entry: `contest:round2` - [marketplace listing](https://railcall.ai/marketplace/levellerco/gumroad-seller-ops) (v1.0.3, in review).
 
 ## Who it's for
 
 Digital-product sellers (ebooks, courses, printables, software) who check Gumroad daily but want those checks inside an auditable workflow instead of raw API calls or repeated dashboard logins. Typical users: a solo creator running a morning sales report; a small shop automating discount launches with an approval step; a virtual assistant granted preview-but-not-execute rights on price changes.
 
-## The 10 commands
+## The 11 commands
 
 | Command | Mode | What it does |
 |---|---|---|
@@ -28,6 +28,47 @@ Digital-product sellers (ebooks, courses, printables, software) who check Gumroa
 
 Writes are `write_requires_approval` with `side_effects: external`; the airlock forces a human approval before execution and a signed receipt after.
 
+## Repo layout = the signed module tree
+
+This repository mirrors the module exactly as published to the marketplace (v1.0.3, manifest v2 tree signature):
+
+```
+module.json            # manifest (11 commands, credential spec, pinned network)
+handlers/handler.py    # the handler that executes every command
+description.txt        # the marketplace listing copy
+module.sig             # Ed25519 signature over canonical(module.json) || tree manifest
+```
+
+`module.sig` is the publisher signature over the deterministic tree manifest (`relpath<TAB>sha256` lines). Verify after cloning:
+
+```bash
+python3 - <<'PY'
+import json, hashlib, os
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+m = json.load(open("module.json"))
+ignore = ("__pycache__/", "*.pyc", "*.pyo", "*.pyd", ".pytest_cache/", ".mypy_cache/",
+          ".ruff_cache/", ".git/", ".gitignore", ".env", ".env.*", "*.env", ".railcall/",
+          ".railcall_workspace/", "node_modules/", "*.log", ".DS_Store", "module.sig",
+          "publisher.attestation.json")
+import fnmatch
+files = []
+for dirpath, _, filenames in os.walk("."):
+    for fn in filenames:
+        rel = os.path.relpath(os.path.join(dirpath, fn), ".").replace("\\", "/")
+        if any(fnmatch.fnmatch(rel, p) or fnmatch.fnmatch(fn, p) for p in ignore):
+            continue
+        files.append((rel, hashlib.sha256(open(rel, "rb").read()).hexdigest()))
+files.sort()
+tree = "".join(f"{r}\t{s}\n" for r, s in files).encode()
+canonical = json.dumps({k: v for k, v in m.items() if k != "signature"},
+                       sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+Ed25519PublicKey.from_public_bytes(bytes.fromhex(m["publisher_pubkey"])).verify(
+    bytes.fromhex(open("module.sig").read().strip()), canonical + b"\n" + tree)
+print("signature OK - tree matches the marketplace listing")
+PY
+```
+
 ## Install
 
 ```bash
@@ -40,7 +81,7 @@ Then save one vault entry:
 railcall vault set gumroad '{"access_token":"<your 40-char Gumroad API token>"}'
 ```
 
-The token is read from the RailCall vault at execution time — never from environment variables, never logged, never included in receipts or error messages.
+The token is read from the RailCall vault at execution time - never from environment variables, never logged, never included in receipts or error messages.
 
 ## Worked example: morning revenue check
 
@@ -62,11 +103,11 @@ receipt: offer_code_id returned, signed
 
 ## Credentials
 
-One Gumroad API token (Bearer), stored only in the RailCall vault. Get it from Gumroad Settings → Advanced → Applications. Read commands work with any valid token; write commands exercise exactly the abilities shown above — no other permissions are requested or used.
+One Gumroad API token (Bearer), stored only in the RailCall vault. Get it from Gumroad Settings -> Advanced -> Applications. Read commands work with any valid token; write commands exercise exactly the abilities shown above - no other permissions are requested or used.
 
 ## Known limitations
 
 - Gumroad's `/sales` endpoint returns one page per call; for shops with thousands of sales, pass `after`/`before` windows.
 - `price` updates use Gumroad's integer minor-units field (2900 = £29.00).
-- License verification returns 404 mapped to `valid: false` with the server message — a wrong key is an answer, not an error.
+- License verification returns 404 mapped to `valid: false` with the server message - a wrong key is an answer, not an error.
 - Not affiliated with or endorsed by Gumroad.

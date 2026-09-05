@@ -1,8 +1,8 @@
 {
   "id": "levellerco/gumroad-seller-ops",
   "name": "gumroad-seller-ops",
-  "version": "1.0.2",
-  "manifest_version": 1,
+  "version": "1.0.3",
+  "manifest_version": 2,
   "publisher_pubkey": "b8d07b5fa00f5e23089da5ac9e612cee94373fd0b7536f7af22d03b2a46279dd",
   "provider": "gumroad",
   "description": "Governed Gumroad seller operations. Ten commands covering the day-to-day seller loop: product catalogue reads, sales/revenue reporting, license verification, subscriber and audience-email pulls, offer-code create/list/delete, and price updates - all through the preview -> approve -> execute airlock. Auth = one Gumroad API token (Bearer). Built for digital-product sellers who want sales checks and discount management inside governed workflows instead of raw API calls.",
