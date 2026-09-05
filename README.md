@@ -39,24 +39,36 @@ description.txt        # the marketplace listing copy
 module.sig             # Ed25519 signature over canonical(module.json) || tree manifest
 ```
 
-`module.sig` is the publisher signature over the deterministic tree manifest (`relpath<TAB>sha256` lines). Verify after cloning:
+`module.sig` is the publisher signature over the deterministic tree manifest (`relpath<TAB>sha256` lines). The signed tree is `module.json` + `handlers/handler.py` + `description.txt`; `README.md` and `LICENSE` are repo-only. Verify after cloning:
 
 ```bash
 python3 - <<'PY'
-import json, hashlib, os
+import json, hashlib, os, fnmatch
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 m = json.load(open("module.json"))
 ignore = ("__pycache__/", "*.pyc", "*.pyo", "*.pyd", ".pytest_cache/", ".mypy_cache/",
           ".ruff_cache/", ".git/", ".gitignore", ".env", ".env.*", "*.env", ".railcall/",
           ".railcall_workspace/", "node_modules/", "*.log", ".DS_Store", "module.sig",
-          "publisher.attestation.json")
-import fnmatch
+          "publisher.attestation.json",
+          "README.md", "LICENSE")  # repo-only files, not part of the signed tree
+
+def ignored(rel):
+    import fnmatch
+    parts = rel.split("/")
+    for pat in ignore:
+        if pat.endswith("/"):
+            if pat[:-1] in parts:
+                return True
+        elif fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(parts[-1], pat):
+            return True
+    return False
+
 files = []
 for dirpath, _, filenames in os.walk("."):
     for fn in filenames:
         rel = os.path.relpath(os.path.join(dirpath, fn), ".").replace("\\", "/")
-        if any(fnmatch.fnmatch(rel, p) or fnmatch.fnmatch(fn, p) for p in ignore):
+        if ignored(rel):
             continue
         files.append((rel, hashlib.sha256(open(rel, "rb").read()).hexdigest()))
 files.sort()
