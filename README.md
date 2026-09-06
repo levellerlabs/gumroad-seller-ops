@@ -28,6 +28,17 @@ Digital-product sellers (ebooks, courses, printables, software) who check Gumroa
 
 Writes are `write_requires_approval` with `side_effects: external`; the airlock forces a human approval before execution and a signed receipt after.
 
+## Demo video
+
+[`demo.mp4`](demo.mp4) (2 min 17 s, 1280x800, H.264) shows the module live in RailCall Studio v1.5.8 against the real Gumroad API - no mocks:
+
+1. the marketplace listing and the installed module, v1.0.3, signature verified
+2. the Sends airlock with all 11 commands registered
+3. a read (`gumroad.get_product`): preview -> pending approval -> approve -> execute -> HTTP 200, receipt signed
+4. a real write (`gumroad.create_offer_code`, 10% `RCMOD-DEMO`): same ceremony, code goes live on Gumroad
+5. cleanup (`gumroad.delete_offer_code`): the demo code is deleted through the airlock - net side effects zero
+6. the receipts ledger: every run listed with signer and a verifiable signature
+
 ## Repo layout = the signed module tree
 
 This repository mirrors the module exactly as published to the marketplace (v1.0.3, manifest v2 tree signature):
